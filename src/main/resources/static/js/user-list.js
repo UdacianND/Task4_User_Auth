@@ -37,10 +37,9 @@ $(document).ready(function(){
             contentType: 'application/json; charset=utf-8',
             data: JSON.stringify(selected),
             async:true
-        })
-        setTimeout(function(){
+        }).done(function(){
             window.location.href = '/'
-        }, 100)
+        })
 
     }
 
