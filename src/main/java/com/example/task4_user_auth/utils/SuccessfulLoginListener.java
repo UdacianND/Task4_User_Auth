@@ -3,7 +3,6 @@ package com.example.task4_user_auth.utils;
 import com.example.task4_user_auth.entity.User;
 import com.example.task4_user_auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.stereotype.Component;

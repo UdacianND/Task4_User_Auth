@@ -6,8 +6,6 @@ import com.example.task4_user_auth.entity.UserStatus;
 import com.example.task4_user_auth.payload.response.UserDto;
 import com.example.task4_user_auth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpSession;
@@ -15,7 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.example.task4_user_auth.entity.UserStatus.*;
+import static com.example.task4_user_auth.entity.UserStatus.ACTIVE;
+import static com.example.task4_user_auth.entity.UserStatus.BLOCKED;
 import static com.example.task4_user_auth.utils.SessionManager.getSessionByUsername;
 import static com.example.task4_user_auth.utils.SessionManager.removeSession;
 
@@ -25,12 +24,6 @@ import static com.example.task4_user_auth.utils.SessionManager.removeSession;
 public class UserService implements UserBaseService {
 
     private final UserRepository userRepository;
-//    private final SessionRegistry sessionRegistry;
-
-    @Override
-    public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username).orElse(null);
-    }
 
     @Override
     public List<UserDto> getUserList() {
@@ -45,8 +38,7 @@ public class UserService implements UserBaseService {
                             user.getPassword(),
                             user.getRegisteredTime(),
                             user.getLastLoginTime(),
-                            user.getStatus()
-                    )
+                            user.getStatus())
             );
         }
         return userDtoList;
@@ -55,28 +47,29 @@ public class UserService implements UserBaseService {
     @Override
     public void deleteAllById(Long[] userIds) {
         for (Long id: userIds) {
+            blockUser(id);
             userRepository.deleteById(id);
         }
     }
 
     @Override
     public void blockAllById(Long[] userIds) {
-        setAllUsersStatus(userIds, BLOCKED);
+        for (Long id : userIds){
+            setUserStatus(id, BLOCKED);
+            blockUser(id);
+        }
     }
 
+    @Override
     public void unblockAllById(Long[] userIds) {
-        setAllUsersStatus(userIds, ACTIVE);
+        for (Long id : userIds)
+            setUserStatus(id, ACTIVE);
     }
 
-    public void setAllUsersStatus(Long[] userIds, UserStatus status) {
-        for (Long id: userIds) {
+    public void setUserStatus(Long id, UserStatus status) {
             User user = getUserById(id);
             user.setStatus(status);
-            if (status == BLOCKED){
-                blockUser(user.getUsername());
-            }
             userRepository.save(user);
-        }
     }
 
     private User getUserById(Long id) {
@@ -86,7 +79,8 @@ public class UserService implements UserBaseService {
         return optionalUser.get();
     }
 
-    private void blockUser(String username){
+    private void blockUser(Long id){
+        String username = getUserById(id).getUsername();
         HttpSession session = getSessionByUsername(username);
         if(session != null){
             session.invalidate();
@@ -94,22 +88,4 @@ public class UserService implements UserBaseService {
         }
     }
 
-    @Override
-    public boolean checkUserInList(Long[] userIds) {
-        User principal = getPrincipal();
-        boolean userExists = false;
-        for (Long id: userIds) {
-            if (principal.getId().equals(id)) {
-                userExists = true;
-                break;
-            }
-        }
-        return userExists;
-    }
-
-
-    private User getPrincipal(){
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (User)authentication.getPrincipal();
-    }
 }
